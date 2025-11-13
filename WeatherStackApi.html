@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PaulCast Daily Weather Report</title>
+  <style>
+    :root {
+      --sky:#a0e9ff;
+      --grass:#b8f3b3;
+      --sun:#ffe266;
+      --cloud:#ffffff;
+      --text:#272626;
+      --card-bg:#a0e1ff;
+      --shadow:rgba(0,0,0,0.15);
+    }
+    *{box-sizing:border-box;font-family:'Comic Sans MS','Poppins',sans-serif;margin:0;padding:0}
+    body{
+      background:linear-gradient(180deg,var(--sky) 0%,var(--grass) 100%);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text);
+    }
+    .container{
+      background:var(--card-bg);
+      width:95%;max-width:600px;
+      padding:24px;border-radius:20px;
+      box-shadow:0 6px 25px var(--shadow);
+      border:4px solid #fff;
+    }
+    h1{text-align:center;font-size:26px;margin-bottom:6px;color:#0b3d91;}
+    p{text-align:center;font-size:14px;color:#4b5563;margin-bottom:20px;}
+    .controls{
+      display:flex;gap:10px;justify-content:center;margin-bottom:20px;flex-wrap:wrap;
+    }
+    input,button{
+      padding:10px 14px;border:none;border-radius:10px;font-size:14px;
+    }
+    input{
+      flex:1;min-width:60%;
+      background:#f0f9ff;color:#0f172a;border:2px solid #cce7ff;
+    }
+    button{
+      background:var(--sun);
+      color:#4b3b00;font-weight:700;cursor:pointer;
+      border:2px solid #fff;
+    }
+    button:hover{background:#ffdd33;}
+    .weather-box{
+      display:flex;flex-direction:column;align-items:center;gap:8px;
+      padding:16px;border-radius:16px;
+      background:var(--cloud);text-align:center;
+      box-shadow:inset 0 0 10px rgba(0,0,0,0.05);
+      min-height:180px;
+    }
+    .weather-box img{width:80px;height:80px;}
+    .weather-main{font-size:20px;font-weight:600;}
+    .temp{font-size:36px;font-weight:700;color:#0b3d91;}
+    .details{font-size:14px;color:#334155;}
+    footer{text-align:center;margin-top:20px;font-size:12px;color:#475569;}
+
+    body {
+    background: linear-gradient(180deg, var(--sky) 0%, var(--grass) 100%),
+                url('https://img.freepik.com/free-vector/flat-design-monsoon-season-clouds-illustration_23-2149424294.jpg') center/cover no-repeat;
+    background-blend-mode: lighten;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌦️PaulCast Weather🌤️</h1>
+    <p>Search for the weather anywhere in the Philippines!</p>
+
+    <div class="controls">
+      <input type="text" id="cityInput" placeholder="Enter a Philippine city..." />
+      <button id="getWeather">☁️ Check</button>
+    </div>
+
+    <div class="weather-box" id="weatherBox">
+      <img id="icon" src="" alt="weather icon" style="display:none" />
+      <div class="weather-main" id="condition">Type a city name and check its weather 🌤️</div>
+      <div class="temp" id="temp"></div>
+      <div class="details" id="details"></div>
+    </div>
+
+    <footer>Data from Open-Meteo 💨</footer>
+  </div>
+
+  <script>
+    const icon = document.getElementById('icon');
+    const condition = document.getElementById('condition');
+    const temp = document.getElementById('temp');
+    const details = document.getElementById('details');
+    const button = document.getElementById('getWeather');
+    const input = document.getElementById('cityInput');
+
+    async function getWeather(city){
+      if(!city.trim()){ condition.textContent = "Please enter a city 🌆"; return; }
+
+      condition.textContent = 'Looking up city... 🔍';
+      icon.style.display='none';
+      temp.textContent='';
+      details.textContent='';
+
+      try {
+        const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&country=PH&count=1`;
+        const geoRes = await fetch(geoUrl);
+        const geoData = await geoRes.json();
+
+        if(!geoData.results || geoData.results.length === 0){
+          condition.textContent = 'City not found 😔';
+          return;
+        }
+
+        const { latitude, longitude, name } = geoData.results[0];
+        condition.textContent = `Fetching weather for ${name}... ☁️`;
+
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+        const res = await fetch(weatherUrl);
+        const data = await res.json();
+        const current = data.current_weather;
+
+        if(!current){ condition.textContent = 'No weather data available 😢'; return; }
+
+        const desc = weatherDescription(current.weathercode);
+        const iconUrl = weatherIcon(current.weathercode);
+
+        icon.src = iconUrl;
+        icon.style.display = 'block';
+        condition.textContent = `${desc} in ${name}`;
+        temp.textContent = `${current.temperature} °C`;
+        details.textContent = `💨 Wind: ${current.windspeed} km/h | 🕓 Time: ${current.time}`;
+      } catch (err) {
+        console.error(err);
+        condition.textContent = 'Error fetching data 😢';
+      }
+    }
+
+    function weatherDescription(code){
+      const map={
+        0:'☀️ Clear sky',1:'🌤️ Mainly clear',2:'⛅ Partly cloudy',3:'☁️ Overcast',
+        45:'🌫️ Foggy',48:'🌫️ Rime fog',51:'🌦️ Light drizzle',53:'🌧️ Moderate drizzle',
+        55:'🌧️ Heavy drizzle',61:'🌧️ Light rain',63:'🌧️ Moderate rain',65:'🌧️ Heavy rain',
+        71:'❄️ Light snow',73:'❄️ Moderate snow',75:'❄️ Heavy snow',
+        80:'🌧️ Showers',81:'🌧️ Rain showers',82:'🌧️ Heavy rain showers',
+        95:'⛈️ Thunderstorm',96:'⛈️ Storm w/ hail',99:'⛈️ Strong thunderstorm'
+      };
+      return map[code]||'🌈 Weather update';
+    }
+
+    function weatherIcon(code){
+      if(code===0) return 'https://cdn-icons-png.flaticon.com/512/869/869869.png';
+      if([1,2,3].includes(code)) return 'https://cdn-icons-png.flaticon.com/512/1163/1163661.png';
+      if([61,63,65,80,81,82].includes(code)) return 'https://cdn-icons-png.flaticon.com/512/7512/7512518.png';
+      if([95,96,99].includes(code)) return 'https://cdn-icons-png.flaticon.com/512/3104/3104612.png';
+      if([45,48].includes(code)) return 'https://cdn-icons-png.flaticon.com/256/2076/2076827.png';
+      if([51,53,55].includes(code)) return 'https://cdn-icons-png.flaticon.com/512/414/414974.png';
+      if([71,73,75].includes(code)) return 'https://cdn-icons-png.flaticon.com/512/642/642102.png';
+    }
+
+    button.addEventListener('click', ()=>{
+      const city = input.value;
+      getWeather(city);
+    });
+
+    input.addEventListener('keypress', e=>{
+      if(e.key === 'Enter') getWeather(input.value);
+    });
+  </script>
+</body>
+</html>
