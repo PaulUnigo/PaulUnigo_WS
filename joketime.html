@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Joke Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 100px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+    }
+    #joke {
+      margin: 20px auto;
+      width: 80%;
+      max-width: 500px;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Random Joke Generator</h1>
+  <div id="joke">Click the button to get a joke!</div>
+  <button onclick="getJoke()">Get Joke</button>
+
+  <script>
+    function getJoke() {
+      fetch('https://v2.jokeapi.dev/joke/Any')
+        .then(response => response.json())
+        .then(data => {
+          const jokeDiv = document.getElementById('joke');
+          if (data.type === 'single') {
+            jokeDiv.textContent = data.joke;
+          } else {
+            jokeDiv.textContent = data.setup + " ... " + data.delivery;
+          }
+        })
+        .catch(error => {
+          document.getElementById('joke').textContent = 'Failed to fetch a joke 😢';
+          console.error(error);
+        });
+    }
+  </script>
+
+</body>
+</html>
